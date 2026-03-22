@@ -11,7 +11,7 @@
   <!-- #region Nombre -->
   <div class="row">
     <div class="col-6">
-      <div class="form-group">
+      <div class="mb-3">
         <h5 for="name_top">Nombre:</h5>
         <input
           type="text"
@@ -29,7 +29,7 @@
   <!-- #region Tipo de Carta -->
   <div class="row">
     <div class="col-6">
-      <div class="form-group">
+      <div class="mb-3">
         <h5 for="name_top">Tipo de Carta</h5>
         <div class="form-check form-check-inline">
           <input
@@ -62,7 +62,7 @@
   <!-- #region Dobles -->
   <div class="row">
     <div class="col-10">
-      <div class="form-group">
+      <div class="mb-3">
         <h5 for="name_top">Ubicacion de los Dobles</h5>
         <div class="form-check form-check-inline">
           <input
@@ -173,7 +173,7 @@
   <!-- #region Cartas a Generar -->
   <div class="row">
     <div class="col-6">
-      <div class="form-group">
+      <div class="mb-3">
         <h5 for="name_top">Cartas a Generar</h5>
         <div class="form-check form-check-inline">
           <input class="form-check-input" type="radio" name="toda" id="toda" value="0" [(ngModel)]="cuantas" />
@@ -187,7 +187,7 @@
     </div>
     <div class="col-6"></div>
     <div class="col-6">
-      <div class="form-group">
+      <div class="mb-3">
         <h5 for="name_top">Cuantas?</h5>
         <input
           [disabled]="cuantas == '0'"
@@ -223,7 +223,7 @@
         </div>
       </div>
       <div class="col-1">
-        <span> {{ name_top }} </span>
+        <span>{{ name_top }}</span>
       </div>
     </div>
   </div>

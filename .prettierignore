@@ -1,0 +1,17 @@
+# Build output
+dist/
+.angular/
+
+# Dependencies
+node_modules/
+
+# Lock files — formatting these causes merge conflicts
+package-lock.json
+yarn.lock
+
+# Minified assets
+*.min.js
+*.min.css
+
+# Generated files
+e2e/
