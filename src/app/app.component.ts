@@ -1,9 +1,12 @@
 import { Component } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 
 /** Tuple: [id, name, imagePath] */
 type LotCard = [number, string, string];
 
 @Component({
+  standalone: true,
+  imports: [FormsModule],
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
@@ -80,28 +83,10 @@ export class AppComponent {
   public ubicacionDoblesIMG = './assets/images/orden/666.png';
   //#endregion 'Variables'
 
-
   //#region 'General Methods'
   /** Updates the preview image when the user selects a double placement option. */
   public ubicacionDobles(): void {
     this.ubicacionDoblesIMG = `./assets/images/orden/${this.ubicacion}.png`;
-  }
-
-  /**
-   * TrackBy for the outer *ngFor over `cards`.
-   * The entire cards array is replaced on each generation, so the index
-   * is the appropriate stable identity key.
-   */
-  public trackByCardIndex(index: number): number {
-    return index;
-  }
-
-  /**
-   * TrackBy for the inner *ngFor over a single card's LotCard items.
-   * Uses the unique lotería piece ID stored at position [0] of the tuple.
-   */
-  public trackByCardItemId(_index: number, item: LotCard): number {
-    return item[0];
   }
 
   /** Generates N random, unique Loteria cards. */
@@ -255,7 +240,7 @@ export class AppComponent {
 
   /** Deep-clones data via JSON serialization. */
   private cloneData(data: LotCard[]): LotCard[] {
-    return JSON.parse(JSON.stringify(data));
+    return JSON.parse(JSON.stringify(data)) as LotCard[];
   }
   //#endregion 'General Methods'
 }
