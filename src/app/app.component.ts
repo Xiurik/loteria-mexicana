@@ -89,23 +89,53 @@ export class AppComponent {
     this.ubicacionDoblesIMG = `./assets/images/orden/${this.ubicacion}.png`;
   }
 
-  /** Generates N random, unique Loteria cards. */
+  /** Generates N random, unique Loteria cards preventing simultaneous wins. */
   public create_cards(): void {
     this.cards = [];
     this.cards_ordered = [];
     const CANTIDAD = this.cuantas === '0' ? 54 : Number(this.cantidad);
 
-    for (let i = 1; i <= CANTIDAD; i++) {
-      this.create_card(i);
-      let cc = this.cloneData(this.card).sort();
+    const usedCards = new Set<string>(); // Tracks full card signatures (16 pictures)
+    const usedLines = new Set<string>(); // Tracks winning combinations of 4 pictures 
 
-      while (this.cards_ordered.filter((obj) => obj === cc).length > 0) {
-        this.create_card(i);
-        cc = this.cloneData(this.card).sort();
+    for (let i = 1; i <= CANTIDAD; i++) {
+      let attempts = 0;
+      let valid = false;
+      let newCard: LotCard[] = [];
+      let cardSignature = '';
+      let cardLines: string[] = [];
+
+      while (!valid && attempts < 2000) {
+        attempts++;
+        newCard = this.generate_random_card(i);
+        
+        // Full card uniqueness (no 2 identical boards)
+        const ids = newCard.map(c => c[0]);
+        cardSignature = [...ids].sort((a,b)=>a-b).join('-');
+        
+        if (usedCards.has(cardSignature)) continue;
+
+        // Prevent identical winning 4-picture line combinations so 2 players don't tie
+        cardLines = this.getWinningLines(newCard);
+        const hasDuplicateLine = cardLines.some(line => usedLines.has(line));
+        
+        if (hasDuplicateLine) continue;
+
+        // If it passed all collision checks, break out
+        valid = true;
       }
 
-      this.cards.push(this.cloneData(this.card));
-      this.cards_ordered.push(cc);
+      if (!valid) {
+         console.warn(`Fallback for Card #${i} after 2000 attempts. Relaxing geometric line constraints.`);
+      }
+
+      // Add verified signatures to our tracking sets
+      usedCards.add(cardSignature);
+      cardLines.forEach(line => usedLines.add(line));
+
+      this.cards.push(this.cloneData(newCard));
+      // Sort numerically by ID
+      this.cards_ordered.push(this.cloneData(newCard).sort((a,b)=>a[0]-b[0]));
     }
 
     this.showData();
@@ -116,79 +146,82 @@ export class AppComponent {
     window.print();
   }
 
-  /** Builds a single 16-image card, placing the double at the designated positions. */
-  private create_card(double: number): void {
-    this.card = [];
-    for (let i = 1; i < 16; i++) {
-      const random = this.get_random(1, 54, double);
-      const lote = this.loteria.filter((obj) => obj[0] === random)[0];
+  /** Shuffles and builds a 16-image card, optionally inserting a double image. */
+  private generate_random_card(index: number): LotCard[] {
+    const deck = this.cloneData(this.loteria);
+    // Fisher-Yates shuffle array
+    for (let i = deck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
 
-      if (i < 15) {
-        this.card.push(lote);
-      } else {
-        const doubleLote = this.loteria.filter((obj) => obj[0] === double)[0];
-        this.setDouble(doubleLote);
-      }
+    if (this.dobles === 'true') {
+      // Pick the image to double sequentially so every card gets a different extra advantage
+      const targetDoubleId = ((index - 1) % 54) + 1;
+      const doubleImage = this.loteria.find(c => c[0] === targetDoubleId)!;
+      
+      const others = deck.filter(c => c[0] !== targetDoubleId).slice(0, 14);
+      const newCard = [...others];
+      
+      this.applyDoubleFormat(newCard, doubleImage);
+      return newCard;
+    } else {
+      // Strictly 16 unique images (Sin Dobles)
+      return deck.slice(0, 16);
     }
   }
 
-  /** Returns a random integer in [min, max] that is not already on the card and is not the double. */
-  private get_random(min: number, max: number, double: number): number {
-    let random = Math.floor(Math.random() * (max - min + 1) + min);
-    let exist = this.card.filter((obj) => obj[0] === random);
-
-    while (exist.length > 0 || double === random) {
-      random = Math.floor(Math.random() * (max - min + 1) + min);
-      exist = this.card.filter((obj) => obj[0] === random);
-    }
-    return random;
-  }
-
-  /** Inserts the double card into the two positions determined by the selected placement option. */
-  private setDouble(lote: LotCard): void {
-    let d1 = 0;
-    let d2 = 0;
+  /** Inserts the double card into the selected placement configuration. */
+  private applyDoubleFormat(card: LotCard[], doubleImage: LotCard): void {
     let ran = this.ubicacion;
+    let p1 = 1;
+    let p2 = 4;
 
     if (ran === '666') {
-      ran = this.doubles[Math.floor(Math.random() * 8)];
+      // Restore classic behavior: randomly select one of the 8 established cultural patterns
+      ran = this.doubles[Math.floor(Math.random() * this.doubles.length)];
     }
 
-    if (ran === '14') {
-      d1 = 0;
-      d2 = 3;
-    }
-    if (ran === '113') {
-      d1 = 0;
-      d2 = 12;
-    }
-    if (ran === '116') {
-      d1 = 0;
-      d2 = 15;
-    }
-    if (ran === '413') {
-      d1 = 3;
-      d2 = 12;
-    }
-    if (ran === '416') {
-      d1 = 3;
-      d2 = 15;
-    }
-    if (ran === '611') {
-      d1 = 5;
-      d2 = 10;
-    }
-    if (ran === '710') {
-      d1 = 6;
-      d2 = 9;
-    }
-    if (ran === '1316') {
-      d1 = 12;
-      d2 = 15;
+    // Map exact 1-based positions from strict layouts
+    switch (ran) {
+      case '14':   p1 = 1;  p2 = 4;  break;
+      case '113':  p1 = 1;  p2 = 13; break;
+      case '116':  p1 = 1;  p2 = 16; break;
+      case '413':  p1 = 4;  p2 = 13; break;
+      case '416':  p1 = 4;  p2 = 16; break;
+      case '611':  p1 = 6;  p2 = 11; break;
+      case '710':  p1 = 7;  p2 = 10; break;
+      case '1316': p1 = 13; p2 = 16; break;
     }
 
-    this.card.splice(d1, 0, lote);
-    this.card.splice(d2, 0, lote);
+    // Perform the array splices securely converting strictly back to 0-based arrays
+    card.splice(p1 - 1, 0, doubleImage);
+    card.splice(p2 - 1, 0, doubleImage);
+  }
+
+  /** Extracts all combinations of rows, cols, diagonals, corners, and center blocks to prevent simultaneous multi-player wins. */
+  private getWinningLines(card: LotCard[]): string[] {
+    const lines: string[] = [];
+    const ids = card.map(c => c[0]);
+    
+    const addLine = (indexes: number[]): void => {
+      // Standardize the line signature by sorting it ascending
+      const lineIds = indexes.map(i => ids[i]).sort((a,b)=>a-b);
+      lines.push(lineIds.join('-'));
+    };
+
+    // 4 Rows
+    addLine([0,1,2,3]); addLine([4,5,6,7]); addLine([8,9,10,11]); addLine([12,13,14,15]);
+    // 4 Columns
+    addLine([0,4,8,12]); addLine([1,5,9,13]); addLine([2,6,10,14]); addLine([3,7,11,15]);
+    // 2 Diagonals
+    addLine([0,5,10,15]); addLine([3,6,9,12]);
+    // Four corners
+    addLine([0,3,12,15]);
+    // Center square block
+    addLine([5,6,9,10]);
+    
+    return lines;
   }
 
   /** Generates a specific, pre-defined set of cards for testing. */
