@@ -1,6 +1,7 @@
 <div class="container">
-  <br />
-  <!-- #region Title -->
+  <div class="d-print-none">
+    <br />
+    <!-- #region Title -->
   <div class="row">
     <div class="col-12">
       <h1>Generador de Cartas de Loteria Mexicana</h1>
@@ -205,12 +206,14 @@
 
   <!-- #region Boton -->
   <div class="row">
-    <div class="col-2">
+    <div class="col-4 d-flex gap-2">
       <button type="button" class="btn btn-primary" (click)="create_cards()">Generar Loteria</button>
+      <button type="button" class="btn btn-success" (click)="imprimir()" [disabled]="cards.length === 0">Imprimir</button>
     </div>
-    <div class="col-10"></div>
+    <div class="col-8"></div>
   </div>
   <!-- #endregion -->
+  </div>
 
   <!-- #region Loteria -->
   @for (c of cards; track $index; let i = $index) {

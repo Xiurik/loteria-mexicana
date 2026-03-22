@@ -111,6 +111,11 @@ export class AppComponent {
     this.showData();
   }
 
+  /** Triggers the browser print dialog. */
+  public imprimir(): void {
+    window.print();
+  }
+
   /** Builds a single 16-image card, placing the double at the designated positions. */
   private create_card(double: number): void {
     this.card = [];
