@@ -1,13 +1,16 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
+
+/** Tuple: [id, name, imagePath] */
+type LotCard = [number, string, string];
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
 })
-export class AppComponent implements OnInit {
+export class AppComponent {
   //#region 'Variables'
-  private loteria = [
+  private loteria: LotCard[] = [
     [1, 'gallo', './assets/images/cartas/1.png'],
     [2, 'diablito', './assets/images/cartas/2.png'],
     [3, 'dama', './assets/images/cartas/3.png'],
@@ -65,9 +68,9 @@ export class AppComponent implements OnInit {
   ];
   private doubles = ['14', '113', '116', '413', '416', '611', '710', '1316'];
 
-  public card: any[] = [];
-  public cards: any[] = [];
-  public cards_ordered: any[] = [];
+  public card: LotCard[] = [];
+  public cards: LotCard[][] = [];
+  public cards_ordered: LotCard[][] = [];
 
   public name_top = '';
   public dobles = 'true';
@@ -77,21 +80,35 @@ export class AppComponent implements OnInit {
   public ubicacionDoblesIMG = './assets/images/orden/666.png';
   //#endregion 'Variables'
 
-  //#region 'Angular LifeCycle'
-  constructor() {}
-
-  ngOnInit() {}
-  //#endregion 'Angular LifeCycle'
 
   //#region 'General Methods'
+  /** Updates the preview image when the user selects a double placement option. */
   public ubicacionDobles(): void {
     this.ubicacionDoblesIMG = `./assets/images/orden/${this.ubicacion}.png`;
   }
 
-  public create_cards() {
+  /**
+   * TrackBy for the outer *ngFor over `cards`.
+   * The entire cards array is replaced on each generation, so the index
+   * is the appropriate stable identity key.
+   */
+  public trackByCardIndex(index: number): number {
+    return index;
+  }
+
+  /**
+   * TrackBy for the inner *ngFor over a single card's LotCard items.
+   * Uses the unique lotería piece ID stored at position [0] of the tuple.
+   */
+  public trackByCardItemId(_index: number, item: LotCard): number {
+    return item[0];
+  }
+
+  /** Generates N random, unique Loteria cards. */
+  public create_cards(): void {
     this.cards = [];
     this.cards_ordered = [];
-    const CANTIDAD = this.cuantas == '0' ? 54 : Number(this.cantidad);
+    const CANTIDAD = this.cuantas === '0' ? 54 : Number(this.cantidad);
 
     for (let i = 1; i <= CANTIDAD; i++) {
       this.create_card(i);
@@ -109,70 +126,73 @@ export class AppComponent implements OnInit {
     this.showData();
   }
 
-  private create_card(double: number) {
+  /** Builds a single 16-image card, placing the double at the designated positions. */
+  private create_card(double: number): void {
     this.card = [];
     for (let i = 1; i < 16; i++) {
-      let random = this.get_random(1, 54, double);
-      let lote = this.loteria.filter((obj) => obj[0] === random)[0];
+      const random = this.get_random(1, 54, double);
+      const lote = this.loteria.filter((obj) => obj[0] === random)[0];
 
       if (i < 15) {
         this.card.push(lote);
       } else {
-        lote = this.loteria.filter((obj) => obj[0] === double)[0];
-        this.setDouble(lote);
+        const doubleLote = this.loteria.filter((obj) => obj[0] === double)[0];
+        this.setDouble(doubleLote);
       }
     }
   }
 
-  private get_random(min: number, max: number, double: number) {
+  /** Returns a random integer in [min, max] that is not already on the card and is not the double. */
+  private get_random(min: number, max: number, double: number): number {
     let random = Math.floor(Math.random() * (max - min + 1) + min);
     let exist = this.card.filter((obj) => obj[0] === random);
 
-    while (exist.length > 0 || double == random) {
+    while (exist.length > 0 || double === random) {
       random = Math.floor(Math.random() * (max - min + 1) + min);
       exist = this.card.filter((obj) => obj[0] === random);
     }
     return random;
   }
 
-  private setDouble(lote) {
+  /** Inserts the double card into the two positions determined by the selected placement option. */
+  private setDouble(lote: LotCard): void {
     let d1 = 0;
     let d2 = 0;
     let ran = this.ubicacion;
 
-    if (ran == '666') {
+    if (ran === '666') {
       ran = this.doubles[Math.floor(Math.random() * 8)];
     }
 
-    if (ran == '14') {
+    if (ran === '14') {
       d1 = 0;
       d2 = 3;
     }
-    if (ran == '113') {
+    if (ran === '113') {
       d1 = 0;
       d2 = 12;
     }
-    if (ran == '116') {
+    if (ran === '116') {
       d1 = 0;
       d2 = 15;
     }
-    if (ran == '413') {
+    if (ran === '413') {
       d1 = 3;
       d2 = 12;
     }
-    if (ran == '416') {
+    if (ran === '416') {
       d1 = 3;
       d2 = 15;
     }
-    if (ran == '611') {
+    if (ran === '611') {
       d1 = 5;
       d2 = 10;
     }
-    if (ran == '710') {
+    if (ran === '710') {
       d1 = 6;
       d2 = 9;
     }
-    if (ran == '1316') {
+    if (ran === '1316') {
       d1 = 12;
       d2 = 15;
     }
@@ -181,7 +201,8 @@ export class AppComponent implements OnInit {
     this.card.splice(d2, 0, lote);
   }
 
-  public create_specific_cards() {
+  /** Generates a specific, pre-defined set of cards for testing. */
+  public create_specific_cards(): void {
     this.name_top = 'Lidia Martinez Garcia';
     this.cards = [];
     this.cards_ordered = [];
@@ -197,39 +218,19 @@ export class AppComponent implements OnInit {
       [27, 10, 29, 28, 31, 11, 15, 12, 26, 49, 11, 34, 17, 51, 52, 32],
     ];
 
-    for (let i = 0; i < personal_cards.length; i++) {
-      const element = personal_cards[i];
+    for (const element of personal_cards) {
       this.card = [];
       element.forEach((t) => {
-        let lote = this.loteria.filter((obj) => obj[0] === t)[0];
+        const lote = this.loteria.filter((obj) => obj[0] === t)[0];
         this.card.push(lote);
       });
       this.cards.push(this.cloneData(this.card));
     }
   }
 
-  private showData() {
+  /** Logs sorted card data to the console for debugging. */
+  private showData(): void {
     this.cards.forEach((el) => {
-      // console.log(
-      //   `${el[0][0].toString().length === 1 ? `0${el[0][0]}` : el[0][0]}-${
-      //     el[1][0].toString().length === 1 ? `0${el[1][0]}` : el[1][0]
-      //   }-${el[2][0].toString().length === 1 ? `0${el[2][0]}` : el[2][0]}-${
-      //     el[3][0].toString().length === 1 ? `0${el[3][0]}` : el[3][0]
-      //   }-${el[4][0].toString().length === 1 ? `0${el[4][0]}` : el[4][0]}-${
-      //     el[5][0].toString().length === 1 ? `0${el[5][0]}` : el[5][0]
-      //   }-${el[6][0].toString().length === 1 ? `0${el[6][0]}` : el[6][0]}-${
-      //     el[7][0].toString().length === 1 ? `0${el[7][0]}` : el[7][0]
-      //   }-${el[8][0].toString().length === 1 ? `0${el[8][0]}` : el[8][0]}-${
-      //     el[9][0].toString().length === 1 ? `0${el[9][0]}` : el[9][0]
-      //   }-${el[10][0].toString().length === 1 ? `0${el[10][0]}` : el[10][0]}-${
-      //     el[11][0].toString().length === 1 ? `0${el[11][0]}` : el[11][0]
-      //   }-${el[12][0].toString().length === 1 ? `0${el[12][0]}` : el[12][0]}-${
-      //     el[13][0].toString().length === 1 ? `0${el[13][0]}` : el[13][0]
-      //   }-${el[14][0].toString().length === 1 ? `0${el[14][0]}` : el[14][0]}-${
-      //     el[15][0].toString().length === 1 ? `0${el[15][0]}` : el[15][0]
-      //   }`
-      // );
-
       const DATA = [
         el[0][0],
         el[1][0],
@@ -248,11 +249,12 @@ export class AppComponent implements OnInit {
         el[14][0],
         el[15][0],
       ].sort();
-      console.log(DATA);
+      console.warn(DATA);
     });
   }
 
-  private cloneData(data: any): any {
+  /** Deep-clones data via JSON serialization. */
+  private cloneData(data: LotCard[]): LotCard[] {
     return JSON.parse(JSON.stringify(data));
   }
   //#endregion 'General Methods'
